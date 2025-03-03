@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="static/style/register.css">
+        <title>Login | Chat</title>
+    </head>
+    <body>
+        <div class="wrapper">
+            <div class="title">
+                Login Form
+            </div>
+            <form action="/" method="post">
+                <div class="content">
+                    {% with messages = get_flashed_messages(with_categories=True) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <p class="{{ category }}">{{ message }}</p>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="field">
+                    <input type="text" name="username" value="{{ username }}" required>
+                    <label>Username</label>
+                </div>
+                {% if password_field %}
+                <div class="field">
+                    <input type="password" name="password" required>
+                    <label>Password</label>
+                </div>
+                {% endif %}
+                <div class="content">
+                    <div class="pass-link">
+                        <a href="#">Forgot password?</a>
+                    </div>
+                </div>
+                <div class="field">
+                    <input type="submit" value="Login">
+                </div>
+                {% if need_signup %}
+                <div class="signup-link">
+                    Not a member? <a href="/signup">Signup now</a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </body>
+</html>
