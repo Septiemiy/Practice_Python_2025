@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Chat</title>
+        <link rel="stylesheet" href="static/style/chat.css">
+    </head>
+    <body>
+        <div class="chat-container">
+            <header class="header">
+                <div class="left-controls">
+                    <button class="btn invite">Invite User</button>
+                    <button class="btn create-room">Create Room</button>
+                </div>
+                <div class="right-controls">
+                    <button class="btn logout">Log Out</button>
+                </div>
+            </header>
+            <div class="main-content">
+                <aside class="rooms">
+                    <div class="tabs">
+                        <button class="tab active" data-tab="joined">Joined Rooms</button>
+                        <button class="tab" data-tab="user">Your Rooms</button>
+                    </div>
+                    <div class="room-list" id="joined-rooms">
+                    </div>
+                    <div class="room-list hidden" id="user-rooms">
+                    </div>
+                </aside>
+                <section class="chat">
+                    <div class="chat-window">
+                    </div>
+                    <div class="message-box">
+                        <input type="text" placeholder="Type a message...">
+                        <button class="btn send">Send</button>
+                    </div>
+                </section>
+                <aside class="users">
+                    <h3>Room Users</h3>
+                    <ul class="user-list">
+                    </ul>
+                </aside>
+            </div>
+        </div>
+    </body>
+</html>

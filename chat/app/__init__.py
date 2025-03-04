@@ -1,5 +1,5 @@
 from flask import Flask
-from .routes import registration
+from .routes import registration, chat
 from .events import socketio
 from .extensions import db, migrate
 
@@ -13,6 +13,7 @@ def create_app():
     migrate.init_app(app, db)
 
     app.register_blueprint(registration)
+    app.register_blueprint(chat)
 
     socketio.init_app(app)
 

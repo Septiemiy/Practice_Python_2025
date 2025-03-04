@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect
 from werkzeug.security import generate_password_hash, check_password_hash
 from .extensions import db
 from .models import User
 
-registration = Blueprint('registration', __name__)
+registration = Blueprint("registration", __name__)
+chat = Blueprint("chat", __name__)
 
 @registration.route("/", methods=["GET", "POST"])
 def login_page():
@@ -40,3 +41,7 @@ def signup_page():
             return redirect("/pass")
 
     return render_template("signup.html")
+
+@chat.route("/chat")
+def chat_page():
+    return render_template("chat.html")
