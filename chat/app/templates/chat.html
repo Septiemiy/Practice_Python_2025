@@ -3,6 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
         <title>Chat</title>
         <link rel="stylesheet" href="static/style/chat.css">
     </head>
@@ -10,22 +11,28 @@
         <div class="chat-container">
             <header class="header">
                 <div class="left-controls">
-                    <button class="btn invite">Invite User</button>
-                    <button class="btn create-room">Create Room</button>
+                    <button class="btn invite" onclick="invite_user()">Invite User</button>
+                    <button class="btn create-room" onclick="create_room()">Create Room</button>
                 </div>
                 <div class="right-controls">
-                    <button class="btn logout">Log Out</button>
+                    <button class="btn logout" onclick="logout()">Log Out</button>
                 </div>
             </header>
             <div class="main-content">
                 <aside class="rooms">
                     <div class="tabs">
-                        <button class="tab active" data-tab="joined">Joined Rooms</button>
-                        <button class="tab" data-tab="user">Your Rooms</button>
+                        <button class="tab active" data-tab="joined" onclick="on_joined_rooms_click()">Joined Rooms</button>
+                        <button class="tab" data-tab="user" onclick="on_your_rooms_click()">Your Rooms</button>
                     </div>
                     <div class="room-list" id="joined-rooms">
+                        {% for room in joined_rooms %}
+                            <a href="javascript:void(0);" class="room-item" onclick="open_chat()">{{ room.name }}</a>
+                        {% endfor %}
                     </div>
                     <div class="room-list hidden" id="user-rooms">
+                        {% for room in owned_rooms %}
+                            <a href="javascript:void(0);" class="room-item" onclick="open_chat()">{{ room.name }}</a>
+                        {% endfor %}
                     </div>
                 </aside>
                 <section class="chat">
@@ -43,5 +50,111 @@
                 </aside>
             </div>
         </div>
+        <script>
+            const socket = io()
+
+            function on_your_rooms_click()
+            {
+                var joined_rooms = document.getElementById("joined-rooms")
+                var user_rooms = document.getElementById("user-rooms")
+
+                joined_rooms.classList.add("hidden")
+                user_rooms.classList.remove("hidden")
+
+                document.querySelector(".tab[data-tab=\"joined\"]").classList.remove("active")
+                document.querySelector(".tab[data-tab=\"user\"]").classList.add("active")
+            }
+
+            function on_joined_rooms_click() {
+                var joined_rooms = document.getElementById("joined-rooms")
+                var user_rooms = document.getElementById("user-rooms")
+
+                user_rooms.classList.add("hidden")
+                joined_rooms.classList.remove("hidden")
+
+                document.querySelector(".tab[data-tab=\"user\"]").classList.remove("active")
+                document.querySelector(".tab[data-tab=\"joined\"]").classList.add("active")
+            }           
+
+            function create_room()
+            {
+                var room_name = prompt("Input room name: ")
+                if(room_name)
+                {
+                    socket.emit("create_room", {
+                        room_name: room_name,
+                        user_id: "{{ user_id }}"
+                    })
+                }
+            }
+
+            function invite_user()
+            {
+                var room_name = prompt("Input room name: ")
+                var username = prompt("Input user username: ")
+                if(room_name && username)
+                {
+                    socket.emit("invite_user", {
+                        from_user_id: "{{ user_id }}",
+                        room_name: room_name,
+                        username: username
+                    })
+                }
+            }
+
+            socket.on("room_created", function(data) {
+                var user_rooms_list = document.getElementById("user-rooms")
+                var room_item = document.createElement("a")
+                room_item.href = "javascript:void(0);"
+                room_item.className = "room-item"
+                room_item.innerHTML = `${data.room_name}`
+                room_item.onclick = function() {
+                    open_chat(data.room_id, data.room_name)
+                }
+                user_rooms_list.appendChild(room_item)
+            });
+
+            socket.on("already_in", function(data) {
+                alert(data.msg)
+            })
+
+            socket.on("user_offline", function(data) {
+                alert(data.msg)
+            })
+
+            socket.on("user_room_not_found", function(data) {
+                alert(data.msg)
+            })
+
+            socket.on("invitation", function(data) {
+                var from_user = data.from_user;
+                var room_name = data.room_name;
+                var room_id = data.room_id;
+
+                var accept = confirm(`You have been invited to a room "${room_name}" by a ${from_user}. Accept?`);
+                if (accept) {
+                    socket.emit('add_room', { 
+                        room_id: room_id 
+                    });
+                }
+            });
+
+            socket.on("user_joined", function(data) {
+                var joined_rooms_list = document.getElementById("joined-rooms")
+                var room_item = document.createElement("a")
+                room_item.href = "javascript:void(0);"
+                room_item.className = "room-item"
+                room_item.innerHTML = `${data.room_name}`
+                room_item.onclick = function() {
+                    open_chat(data.room_id, data.room_name)
+                }
+                joined_rooms_list.appendChild(room_item)
+            })
+
+            function logout()
+            {
+                window.location.href = "/logout"
+            }
+        </script>
     </body>
 </html>

@@ -5,3 +5,5 @@ from flask_migrate import Migrate
 socketio = SocketIO()
 db = SQLAlchemy()
 migrate = Migrate()
+
+user_sid = {}
