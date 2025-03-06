@@ -26,27 +26,31 @@
                     </div>
                     <div class="room-list" id="joined-rooms">
                         {% for room in joined_rooms %}
-                            <a href="javascript:void(0);" class="room-item" onclick="open_chat()">{{ room.name }}</a>
+                            <a href="javascript:void(0);" class="room-item" onclick="open_chat(`{{ room.id }}`, `{{ room.name }}`)">{{ room.name }}</a>
                         {% endfor %}
                     </div>
                     <div class="room-list hidden" id="user-rooms">
                         {% for room in owned_rooms %}
-                            <a href="javascript:void(0);" class="room-item" onclick="open_chat()">{{ room.name }}</a>
+                            <a href="javascript:void(0);" class="room-item" onclick="open_chat(`{{ room.id }}`, `{{ room.name }}`)">{{ room.name }}</a>
                         {% endfor %}
                     </div>
                 </aside>
                 <section class="chat">
-                    <div class="chat-window">
+                    <div class="chat-header">
+                        <h2 id="chat-room-name"></h2>
+                    </div>
+                    <div id="chat-area">
+
                     </div>
                     <div class="message-box">
                         <input type="text" placeholder="Type a message...">
-                        <button class="btn send">Send</button>
+                        <button class="btn send" onclick="send_messages()">Send</button>
                     </div>
                 </section>
                 <aside class="users">
                     <h3>Room Users</h3>
-                    <ul class="user-list">
-                    </ul>
+                    <ol class="user-list">
+                    </ol>
                 </aside>
             </div>
         </div>
@@ -127,11 +131,11 @@
             })
 
             socket.on("invitation", function(data) {
-                var from_user = data.from_user;
-                var room_name = data.room_name;
-                var room_id = data.room_id;
+                var from_user = data.from_user
+                var room_name = data.room_name
+                var room_id = data.room_id
 
-                var accept = confirm(`You have been invited to a room "${room_name}" by a ${from_user}. Accept?`);
+                var accept = confirm(`You have been invited to a room "${room_name}" by a ${from_user}. Accept?`)
                 if (accept) {
                     socket.emit('add_room', { 
                         room_id: room_id 
@@ -150,6 +154,81 @@
                 }
                 joined_rooms_list.appendChild(room_item)
             })
+
+            var current_room_id = null
+
+            window.addEventListener("beforeunload", function () {
+                if (current_room_id) {
+                    socket.emit("leave_room", { 
+                        room_id: current_room_id 
+                    });
+                }
+                });
+            
+            function open_chat(room_id, room_name)
+            {
+                if (current_room_id && current_room_id !== room_id) {
+                    socket.emit("leave_room", { 
+                        room_id: current_room_id 
+                    });
+                }
+
+                current_room_id = room_id
+
+                document.getElementById("chat-room-name").textContent = room_name;
+
+                var chat_area = document.getElementById("chat-area")
+                var chat_window = document.getElementById(`chat-window-${room_id}`)
+                if(!chat_window) {
+                    
+                    chat_window = document.createElement("div")
+                    chat_window.id = `chat-window-${room_id}`
+                    chat_window.className = "chat-window hidden"
+                    chat_area.appendChild(chat_window)
+                }
+
+                document.querySelectorAll(".chat-window").forEach((window) => {
+                    window.classList.remove("active")
+                    window.classList.add("hidden")
+                });
+
+                chat_window.classList.add("active")
+                chat_window.classList.remove("hidden")
+
+                socket.emit("join_room", {
+                    room_id: room_id
+                })
+
+                socket.off("join_message")
+                socket.on("join_message", function(data) {
+                    if(data.room_id != room_id) {
+                        return
+                    }
+
+                    var message_element = document.createElement("p")
+                    message_element.innerHTML = `<span style="font-size: 20px;"><i>User <span style="color:${data.user_color}; text-shadow: 0.1px 0.1px 0 white, -0.1px 0.1px 0 white, 0.1px -0.1px 0 white, -0.1px -0.1px 0 white">${data.username}</span> join chat</i></span>`
+                    chat_window.appendChild(message_element)
+
+                    var user_list = document.querySelector(".user-list")
+                    user_list.innerHTML = ""
+                    data.users.forEach((user) => {
+                        var user_item = document.createElement("li")
+                        user_item.innerHTML = `<span style="font-size: 20px;">${user.username}</span>`
+                        user_list.appendChild(user_item)
+                    })
+                })
+
+                socket.off("leave_message");
+                socket.on("leave_message", function (data) {
+                    if (data.room_id != room_id) {
+                        return;
+                    }
+
+                    var message_element = document.createElement("p");
+                    message_element.innerHTML = `<span style="font-size: 20px;"><i>User <span style="color:${data.user_color}; text-shadow: 0.1px 0.1px 0 white, -0.1px 0.1px 0 white, 0.1px -0.1px 0 white, -0.1px -0.1px 0 white">${data.username}</span> left chat</i></span>`;
+                    chat_window.appendChild(message_element);
+                });
+            }
 
             function logout()
             {

@@ -1,11 +1,13 @@
 from .extensions import socketio, db, user_sid
-from flask_socketio import emit
+from flask_socketio import emit, join_room, leave_room
 from flask import session, request
 from .models import Room, RoomUser, User
+from .utils import generate_random_color
 
 @socketio.on("connect")
 def handle_connect():
     user_sid[session["username"]] = request.sid
+    session["color"] = generate_random_color()
 
 @socketio.on("disconnect")
 def handle_disconnect():
@@ -82,7 +84,7 @@ def handle_add_room(data):
     if room_id:
         user = User.query.filter_by(username = session["username"]).first()
         room = Room.query.get(room_id)
-        new_user = RoomUser(room_id = room_id, user_id = user.id)
+        new_user = RoomUser(room_id = room.id, user_id = user.id)
         db.session.add(new_user)
         db.session.commit()
 
@@ -90,3 +92,43 @@ def handle_add_room(data):
             "room_name": room.name, 
             "room_id": room.id
         }, broadcast=True)
+
+@socketio.on("join_room")
+def handle_join_room(data):
+    room_id = data.get("room_id")
+    username = session["username"]
+    user_color = session["color"]
+
+    room = Room.query.get(room_id)
+    users = room.users
+    user_ids = [user.user_id for user in users]
+    room_users = User.query.filter(User.id.in_(user_ids)).all()
+    room_users_serialized = [
+        {
+            "username": user.username,
+        }
+        for user in room_users
+    ]
+
+    join_room(room_id)
+    emit("join_message", {
+        "room_id": room_id,
+        "username": username,
+        "user_color": user_color,
+        "users": room_users_serialized
+    }, broadcast=True, to = room_id)
+
+@socketio.on("leave_room")
+def handle_leave_room(data):
+    room_id = data.get("room_id")
+    username = session["username"]
+    user_color = session["color"]
+
+    leave_room(room_id)
+
+    print("\n\n\nYes!\n\n\n")
+    emit("leave_message", {
+        "room_id": room_id,
+        "username": username,
+        "user_color": user_color
+    }, broadcast=True, to=room_id)  
