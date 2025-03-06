@@ -99,7 +99,7 @@ form .content label{
   user-select: none;
   padding-left: 5px;
 }
-form .content .pass-link{
+form .content {
   color: "";
 }
 form .field input[type="submit"]{
@@ -121,12 +121,12 @@ form .signup-link{
   margin-top: 20px;
   text-align: center;
 }
-form .pass-link a,
+form a,
 form .signup-link a{
   color: #4158d0;
   text-decoration: none;
 }
-form .pass-link a:hover,
+form a:hover,
 form .signup-link a:hover{
   text-decoration: underline;
 }

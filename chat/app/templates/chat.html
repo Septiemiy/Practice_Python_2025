@@ -43,7 +43,7 @@
 
                     </div>
                     <div class="message-box">
-                        <input type="text" placeholder="Type a message...">
+                        <input id="message-input" type="text" placeholder="Type a message...">
                         <button class="btn send" onclick="send_messages()">Send</button>
                     </div>
                 </section>
@@ -161,9 +161,44 @@
                 if (current_room_id) {
                     socket.emit("leave_room", { 
                         room_id: current_room_id 
-                    });
+                    })
                 }
-                });
+            })
+
+            function send_messages()
+            {
+                var message_input = document.getElementById("message-input")
+                var message = message_input.value
+
+                if(!message)
+                {
+                    return
+                }
+                if(!current_room_id)
+                {
+                    alert("Please select a room")
+                    return
+                }
+
+                socket.emit("send_message", {
+                    room_id: current_room_id,
+                    message: message
+                })
+
+                message_input.value = ""
+            }
+
+            socket.on("receive_message", function (data) {
+                if (data.room_id !== current_room_id) {
+                    return;
+                }
+
+                var chat_area = document.getElementById("chat-area")
+                var chat_window = document.getElementById(`chat-window-${data.room_id}`)
+                var message_element = document.createElement("p")
+                message_element.innerHTML = `<span style="font-size: 20px; color:${data.user_color}; text-shadow: 0.1px 0.1px 0 white, -0.1px 0.1px 0 white, 0.1px -0.1px 0 white, -0.1px -0.1px 0 white">${data.username}</span>: ${data.message}`
+                chat_window.appendChild(message_element)
+            })
             
             function open_chat(room_id, room_name)
             {

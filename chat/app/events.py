@@ -2,7 +2,7 @@ from .extensions import socketio, db, user_sid
 from flask_socketio import emit, join_room, leave_room
 from flask import session, request
 from .models import Room, RoomUser, User
-from .utils import generate_random_color
+from .utils import *
 
 @socketio.on("connect")
 def handle_connect():
@@ -31,6 +31,8 @@ def handle_create_room(data):
         add_owner = RoomUser(room_id = new_room.id, user_id = user_id)
         db.session.add(add_owner)
         db.session.commit()
+
+        create_log_file(new_room.name)
 
         emit("room_created", {
             "room_name": room_name, 
@@ -99,24 +101,25 @@ def handle_join_room(data):
     username = session["username"]
     user_color = session["color"]
 
-    room = Room.query.get(room_id)
-    users = room.users
-    user_ids = [user.user_id for user in users]
-    room_users = User.query.filter(User.id.in_(user_ids)).all()
-    room_users_serialized = [
-        {
-            "username": user.username,
-        }
-        for user in room_users
-    ]
+    if room_id:
+        room = Room.query.get(room_id)
+        users = room.users
+        user_ids = [user.user_id for user in users]
+        room_users = User.query.filter(User.id.in_(user_ids)).all()
+        room_users_serialized = [
+            {
+                "username": user.username,
+            }
+            for user in room_users
+        ]
 
-    join_room(room_id)
-    emit("join_message", {
-        "room_id": room_id,
-        "username": username,
-        "user_color": user_color,
-        "users": room_users_serialized
-    }, broadcast=True, to = room_id)
+        join_room(room_id)
+        emit("join_message", {
+            "room_id": room_id,
+            "username": username,
+            "user_color": user_color,
+            "users": room_users_serialized
+        }, broadcast=True, to = room_id)
 
 @socketio.on("leave_room")
 def handle_leave_room(data):
@@ -124,11 +127,30 @@ def handle_leave_room(data):
     username = session["username"]
     user_color = session["color"]
 
-    leave_room(room_id)
+    if room_id:
+        leave_room(room_id)
 
-    print("\n\n\nYes!\n\n\n")
-    emit("leave_message", {
-        "room_id": room_id,
-        "username": username,
-        "user_color": user_color
-    }, broadcast=True, to=room_id)  
+        emit("leave_message", {
+            "room_id": room_id,
+            "username": username,
+            "user_color": user_color
+        }, broadcast=True, to=room_id)
+
+@socketio.on("send_message")
+def handle_send_message(data):
+    room_id = data.get("room_id")
+    message = data.get("message")
+    username = session["username"]
+    user_color = session["color"]
+
+    if room_id and message:
+
+        room = Room.query.get(room_id)
+        log(room.name, username, message)
+
+        emit("receive_message", {
+                "room_id": room_id,
+                "username": username,
+                "user_color": user_color,
+                "message": message
+        }, to = room_id )
